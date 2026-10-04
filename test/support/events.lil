@@ -1,7 +1,7 @@
 // Test-only view of the event stream: one line per event, `enter|exit type sl:sc:so-el:ec:eo`.
-import { combineAll, createParser, parseDocument } from "../../src/parse.lil";
-import { Parser, Tokens, eventToken, isEnter } from "../../src/tokenizer.lil";
-import { CORE_TYPE_COUNT } from "../../src/types.lil";
+import { combineAll, createParser, parseDocument } from "../../src/micromark/parse.lil";
+import { Parser, Tokens, eventToken, isEnter } from "../../src/micromark/tokenizer.lil";
+import { CORE_TYPE_COUNT } from "../../src/micromark/types.lil";
 
 // Upstream's type names, in id order. Test-only: production code knows types as ints.
 string[] coreNames = [

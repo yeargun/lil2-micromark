@@ -1,8 +1,8 @@
 // lil2-micromark: CommonMark (and extensions) to HTML, over flat typed data.
 
-import { SyntaxExtension, combineAll, createParser, parseDocument } from "./parse.lil";
-import { CompileOptions, Compiler, installCommonmarkHandlers } from "./compile.lil";
-import { Parser } from "./tokenizer.lil";
+import { SyntaxExtension, combineAll, createParser, parseDocument } from "./micromark/parse.lil";
+import { CompileOptions, Compiler, installCommonmarkHandlers } from "./micromark/compile.lil";
+import { Parser } from "./micromark/tokenizer.lil";
 
 // `micromark(value, {allowDangerousHtml, allowDangerousProtocol})`: flags, not an options object.
 export string micromark(string value, bool allowDangerousHtml, bool allowDangerousProtocol) {
