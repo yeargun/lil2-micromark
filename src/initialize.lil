@@ -96,10 +96,10 @@ export Construct document = new Construct("", (Tokenizer self, bool interrupt, f
       tokens.next[childToken] = token;
     }
     childToken = token;
-    flow.defineSkip(tokens.sLine[token], tokens.sColumn[token]);
+    flow.defineSkipAt(tokens.sOffset[token]);
     flow.write(stream);
 
-    if (self.parser.isLazy(tokens.sLine[token])) {
+    if (self.parser.isLazy(self.parser.lineOf(tokens.sOffset[token]))) {
       int index = flow.events.length;
       while (index-- > 0) {
         int other = eventToken(flow.events[index]);
@@ -190,7 +190,7 @@ export Construct document = new Construct("", (Tokenizer self, bool interrupt, f
       return;
     }
     if (childFlow == null) {
-      childFlow = self.parser.create(CT_FLOW, self.line, self.column, self.offset);
+      childFlow = self.parser.create(CT_FLOW, self.offset);
     }
     Tokenizer flow = childFlow ?? self;
     int token = self.enter(tChunkFlow);
@@ -374,8 +374,6 @@ int[] resolveAllLineSuffixes(int[] events, Tokenizer t) {
         int type = if (eventIndex == events.length || tabs || size < 2) { tLineSuffix } else { tHardBreakTrailing };
         int token = newToken(t, type);
         tokens.sIndex[token] = index;
-        tokens.sLine[token] = tokens.eLine[data];
-        tokens.sColumn[token] = tokens.eColumn[data] - size;
         tokens.sOffset[token] = tokens.eOffset[data] - size;
         tokens.endAtEndOf(token, data);
         tokens.endAtStartOf(data, token);

@@ -10,9 +10,14 @@ class SpliceBuffer {
   int[] left;
   int[] right;
 
+  // Works in place: `initial` becomes the left side and holds everything again after `flush`.
   init(int[] initial) {
-    this.left = initial.slice();
+    this.left = initial;
     this.right = [];
+  }
+
+  void flush() {
+    this.setCursor(this.left.length + this.right.length);
   }
 
   int length() {
@@ -79,14 +84,13 @@ class SpliceBuffer {
 export bool subtokenize(int[] eventsArray, Parser parser) {
   Tokens tokens = parser.tokens;
   SpliceBuffer events = new SpliceBuffer(eventsArray);
-  Map<int, int> jumps = new Map<int, int>();
+  // Jumps over expanded child events, by event index (-1: none); upstream's `jumps` object.
+  int[] jumps = [];
   bool more = false;
   int index = -1;
   while (++index < events.length()) {
-    int? jump = jumps.get(index);
-    while (jump != null) {
-      index = jump;
-      jump = jumps.get(index);
+    while (index < jumps.length && jumps[index] >= 0) {
+      index = jumps[index];
     }
     int event = events.get(index);
     int token = eventToken(event);
@@ -117,9 +121,14 @@ export bool subtokenize(int[] eventsArray, Parser parser) {
       if (tokens.contentType[token] != CT_NONE) {
         int[] gaps = subcontent(events, index, parser);
         for (int at = 0; at < gaps.length; at += 2) {
-          jumps.set(gaps[at], gaps[at + 1]);
+          while (jumps.length <= gaps[at]) {
+            jumps.push(-1);
+          }
+          jumps[gaps[at]] = gaps[at + 1];
         }
-        index = jumps.get(index) ?? index;
+        if (index < jumps.length && jumps[index] >= 0) {
+          index = jumps[index];
+        }
         more = true;
       }
     } else if (tokens.has(token, F_CONTAINER)) {
@@ -150,11 +159,7 @@ export bool subtokenize(int[] eventsArray, Parser parser) {
       }
     }
   }
-  int[] result = events.slice(0, -1);
-  eventsArray.length = 0;
-  for (int item of result) {
-    eventsArray.push(item);
-  }
+  events.flush();
   return !more;
 }
 
@@ -168,7 +173,7 @@ int[] subcontent(SpliceBuffer events, int eventIndex, Parser parser) {
   Tokenizer tokenizer = if (tokens.child[token] >= 0) {
     parser.tokenizers[tokens.child[token]]
   } else {
-    parser.create(tokens.contentType[token], tokens.sLine[token], tokens.sColumn[token], tokens.sOffset[token])
+    parser.create(tokens.contentType[token], tokens.sOffset[token])
   };
   if (tokens.child[token] < 0 && tokens.has(token, F_TEXT_TRAILING)) {
     tokenizer.contentTypeTextTrailing = true;
@@ -192,7 +197,7 @@ int[] subcontent(SpliceBuffer events, int eventIndex, Parser parser) {
         stream.push(EOF);
       }
       if (previous >= 0) {
-        tokenizer.defineSkip(tokens.sLine[current], tokens.sColumn[current]);
+        tokenizer.defineSkipAt(tokens.sOffset[current]);
       }
       bool first = tokens.has(current, F_FIRST_CONTENT_OF_LIST_ITEM);
       if (first) {
@@ -214,7 +219,7 @@ int[] subcontent(SpliceBuffer events, int eventIndex, Parser parser) {
     if (index > 0 && !isEnter(childEvents[index]) && isEnter(childEvents[index - 1])) {
       int exitToken = eventToken(childEvents[index]);
       int enterToken = eventToken(childEvents[index - 1]);
-      if (tokens.type[exitToken] == tokens.type[enterToken] && tokens.sLine[exitToken] != tokens.eLine[exitToken]) {
+      if (tokens.type[exitToken] == tokens.type[enterToken] && parser.lineOf(tokens.sOffset[exitToken]) != parser.lineOf(tokens.eOffset[exitToken])) {
         breaks.push(index + 1);
         tokens.child[current] = -1;
         tokens.previous[current] = -1;

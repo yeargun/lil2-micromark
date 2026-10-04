@@ -2,8 +2,10 @@
 //
 // A token is an int: its fields live in the parser's `Tokens` arrays. An event is one int,
 // `token * 2 + kind` (kind 0 enter, 1 exit); its context is the tokenizer that created the token.
-// A point is four ints (buffer index, line, column, offset), kept on the tokenizer and copied into
-// the token arrays at `enter`/`exit`, with exactly upstream's arithmetic (including `defineSkip`).
+// A point is kept on the tokenizer as upstream keeps it (buffer index, line, column, offset, with its
+// `defineSkip` arithmetic). A token stores only the buffer index and the offset of its start and end: under
+// that arithmetic, column - 1 always equals the offset minus the start of its line, so line and column are
+// read from the parser's line table when someone asks (`Parser.lineOf`, `Parser.columnOf`).
 
 import { EOF, CRLF, HT, VS, charOf, markdownLineEnding } from "./codes.lil";
 
@@ -28,30 +30,25 @@ export class Tokens {
   int[] contentType;
   int[] flags;
   int[] sIndex;
-  int[] sLine;
-  int[] sColumn;
   int[] sOffset;
   int[] eIndex;
-  int[] eLine;
-  int[] eColumn;
   int[] eOffset;
   int[] previous;
   int[] next;
   int[] tokenizer;
   int[] child;
   int[] marker;
+  // Extension data per token (GFM table alignment, for one).
+  Map<int, string> data;
 
   init() {
+    this.data = new Map<int, string>();
     this.type = [];
     this.contentType = [];
     this.flags = [];
     this.sIndex = [];
-    this.sLine = [];
-    this.sColumn = [];
     this.sOffset = [];
     this.eIndex = [];
-    this.eLine = [];
-    this.eColumn = [];
     this.eOffset = [];
     this.previous = [];
     this.next = [];
@@ -66,12 +63,8 @@ export class Tokens {
     this.contentType.push(CT_NONE);
     this.flags.push(0);
     this.sIndex.push(0);
-    this.sLine.push(0);
-    this.sColumn.push(0);
     this.sOffset.push(0);
     this.eIndex.push(-1);
-    this.eLine.push(0);
-    this.eColumn.push(0);
     this.eOffset.push(0);
     this.previous.push(-1);
     this.next.push(-1);
@@ -98,29 +91,21 @@ export class Tokens {
   // `token.end = {...other.start}` and friends.
   void endAtStartOf(int token, int other) {
     this.eIndex[token] = this.sIndex[other];
-    this.eLine[token] = this.sLine[other];
-    this.eColumn[token] = this.sColumn[other];
     this.eOffset[token] = this.sOffset[other];
   }
 
   void endAtEndOf(int token, int other) {
     this.eIndex[token] = this.eIndex[other];
-    this.eLine[token] = this.eLine[other];
-    this.eColumn[token] = this.eColumn[other];
     this.eOffset[token] = this.eOffset[other];
   }
 
   void startAtEndOf(int token, int other) {
     this.sIndex[token] = this.eIndex[other];
-    this.sLine[token] = this.eLine[other];
-    this.sColumn[token] = this.eColumn[other];
     this.sOffset[token] = this.eOffset[other];
   }
 
   void startAtStartOf(int token, int other) {
     this.sIndex[token] = this.sIndex[other];
-    this.sLine[token] = this.sLine[other];
-    this.sColumn[token] = this.sColumn[other];
     this.sOffset[token] = this.sOffset[other];
   }
 }
@@ -211,50 +196,89 @@ export int defineResolver(func(int[], Tokenizer)->int[] resolve) {
 }
 
 // One hook of a combined extension: constructs by code, plus the ones for any code (`null`).
+// Codes from -8 to 127 (everything constructs start on) live in dense arrays; others in a map.
+export const int DENSE_CODES = 136;
+export const int DENSE_SHIFT = 8;
+
 export class ConstructMap {
+  (Construct[])[] dense;
+  bool[] present;
   Map<int, Construct[]> byCode;
   Construct[] any;
-  Map<int, Construct[]> cache;
+  (Construct[])[] cache;
+  bool[] cached;
 
   init() {
+    this.dense = [];
+    this.present = [];
+    this.cache = [];
+    this.cached = [];
+    for (int index = 0; index < DENSE_CODES; index++) {
+      this.dense.push([]);
+      this.present.push(false);
+      this.cache.push([]);
+      this.cached.push(false);
+    }
     this.byCode = new Map<int, Construct[]>();
     this.any = [];
-    this.cache = new Map<int, Construct[]>();
+  }
+
+  void invalidate() {
+    for (int index = 0; index < DENSE_CODES; index++) {
+      this.cached[index] = false;
+    }
   }
 
   // micromark-util-combine-extensions: `add: "after"` constructs go last, the rest go first.
   void add(int code, Construct[] list) {
-    Construct[] existing = this.byCode.get(code) ?? [];
+    Construct[] existing = this.atCode(code);
     Construct[] before = [];
+    Construct[] after = [];
     for (Construct construct of list) {
       if (construct.addAfter) {
-        existing.push(construct);
+        after.push(construct);
       } else {
         before.push(construct);
       }
     }
-    this.byCode.set(code, [...before, ...existing]);
-    this.cache.clear();
+    Construct[] combined = [...before, ...existing, ...after];
+    int slot = code + DENSE_SHIFT;
+    if (slot >= 0 && slot < DENSE_CODES) {
+      this.dense[slot] = combined;
+      this.present[slot] = true;
+    } else {
+      this.byCode.set(code, combined);
+    }
+    this.invalidate();
   }
 
   void addAny(Construct[] list) {
     Construct[] before = [];
+    Construct[] after = [];
     for (Construct construct of list) {
       if (construct.addAfter) {
-        this.any.push(construct);
+        after.push(construct);
       } else {
         before.push(construct);
       }
     }
-    this.any = [...before, ...this.any];
-    this.cache.clear();
+    this.any = [...before, ...this.any, ...after];
+    this.invalidate();
   }
 
   bool hasCode(int code) {
+    int slot = code + DENSE_SHIFT;
+    if (slot >= 0 && slot < DENSE_CODES) {
+      return this.present[slot];
+    }
     return this.byCode.has(code);
   }
 
   Construct[] atCode(int code) {
+    int slot = code + DENSE_SHIFT;
+    if (slot >= 0 && slot < DENSE_CODES) {
+      return this.dense[slot];
+    }
     return this.byCode.get(code) ?? [];
   }
 
@@ -263,13 +287,18 @@ export class ConstructMap {
     if (code == EOF) {
       return [];
     }
-    Construct[]? cached = this.cache.get(code);
-    if (cached != null) {
-      return cached;
+    int slot = code + DENSE_SHIFT;
+    if (slot >= 0 && slot < DENSE_CODES) {
+      if (!this.cached[slot]) {
+        this.cache[slot] = [...this.dense[slot], ...this.any];
+        this.cached[slot] = true;
+      }
+      return this.cache[slot];
     }
-    Construct[] list = [...this.atCode(code), ...this.any];
-    this.cache.set(code, list);
-    return list;
+    if (this.byCode.has(code)) {
+      return [...this.atCode(code), ...this.any];
+    }
+    return this.any;
   }
 }
 
@@ -306,6 +335,11 @@ export class Parser {
   Constructs constructs;
   Map<int, bool> lazy;
   string[] defined;
+  // Footnote labels defined so far (micromark-extension-gfm-footnote's `parser.gfmFootnotes`).
+  string[] gfmFootnotes;
+  // The document after preprocessing (BOM removed), and the offset each line starts at.
+  string source;
+  int[] lineStarts;
   Construct documentInit;
   Construct flowInit;
   Construct contentInit;
@@ -318,6 +352,9 @@ export class Parser {
     this.constructs = constructs;
     this.lazy = new Map<int, bool>();
     this.defined = [];
+    this.gfmFootnotes = [];
+    this.source = "";
+    this.lineStarts = [0];
     this.documentInit = documentInit;
     this.flowInit = flowInit;
     this.contentInit = contentInit;
@@ -325,8 +362,48 @@ export class Parser {
     this.textInit = textInit;
   }
 
-  // `parser[contentType](from)`.
-  Tokenizer create(int contentType, int line, int column, int offset) {
+  // Sets the document text (without BOM) and builds the line table.
+  void setSource(string source) {
+    this.source = source;
+    int[] starts = [0];
+    int index = 0;
+    while (index < source.length) {
+      int code = source.codeUnitAt(index);
+      index++;
+      if (code == 13 && index < source.length && source.codeUnitAt(index) == 10) {
+        index++;
+        starts.push(index);
+      } else if (code == 10 || code == 13) {
+        starts.push(index);
+      }
+    }
+    this.lineStarts = starts;
+  }
+
+  // The 1-based line of an offset.
+  int lineOf(int offset) {
+    int low = 0;
+    int high = this.lineStarts.length - 1;
+    while (low < high) {
+      int middle = (low + high + 1) >> 1;
+      if (this.lineStarts[middle] <= offset) {
+        low = middle;
+      } else {
+        high = middle - 1;
+      }
+    }
+    return low + 1;
+  }
+
+  // The 1-based column of an offset.
+  int columnOf(int offset) {
+    return offset - this.lineStarts[this.lineOf(offset) - 1] + 1;
+  }
+
+  // `parser[contentType](from)`, where `from` is the point at `offset`.
+  Tokenizer create(int contentType, int offset) {
+    int line = this.lineOf(offset);
+    int column = offset - this.lineStarts[line - 1] + 1;
     Construct initial = this.documentInit;
     if (contentType == CT_FLOW) {
       initial = this.flowInit;
@@ -408,8 +485,13 @@ export class Tokenizer {
 
   // Feeds codes; returns true once EOF has been processed and the events are final.
   bool write(int[] slice) {
-    for (int code of slice) {
-      this.codes.push(code);
+    if (this.codes.length == 0) {
+      // Callers hand over fresh arrays: adopt the first one instead of copying it.
+      this.codes = slice;
+    } else {
+      for (int code of slice) {
+        this.codes.push(code);
+      }
     }
     this.main();
     if (this.codes.length == 0 || this.codes[this.codes.length - 1] != EOF) {
@@ -448,8 +530,6 @@ export class Tokenizer {
   int enter(int type) {
     int token = this.tokens.create(type, this.id);
     this.tokens.sIndex[token] = this.index;
-    this.tokens.sLine[token] = this.line;
-    this.tokens.sColumn[token] = this.column;
     this.tokens.sOffset[token] = this.offset;
     this.events.push(enterEvent(token));
     this.stack.push(token);
@@ -459,8 +539,6 @@ export class Tokenizer {
   int exit(int type) {
     int token = this.stack.pop();
     this.tokens.eIndex[token] = this.index;
-    this.tokens.eLine[token] = this.line;
-    this.tokens.eColumn[token] = this.column;
     this.tokens.eOffset[token] = this.offset;
     this.events.push(exitEvent(token));
     return token;
@@ -600,6 +678,11 @@ export class Tokenizer {
     this.accountForPotentialSkip();
   }
 
+  // `defineSkip(point)` for the point at `offset`.
+  void defineSkipAt(int offset) {
+    this.defineSkip(this.parser.lineOf(offset), this.parser.columnOf(offset));
+  }
+
   void accountForPotentialSkip() {
     int? start = this.columnStart.get(this.line);
     if (start != null && this.column < 2) {
@@ -616,10 +699,64 @@ export class Tokenizer {
 
   // micromark's `serializeChunks` over the buffer between the token's start and end.
   string sliceSerialize(int token, bool expandTabs) {
-    return this.serialize(this.tokens.sIndex[token], this.tokens.eIndex[token], expandTabs);
+    return this.serialize(this.tokens.sIndex[token], this.tokens.eIndex[token], this.tokens.sOffset[token], expandTabs);
   }
 
-  string serialize(int start, int end, bool expandTabs) {
+  // The codes in [start, end), where the code at `start` sits at source offset `offset`. When the codes
+  // are the source text character for character (no replaced NUL, no gap at a container prefix, no virtual
+  // space shown as a space, no expanded tab), that text is one slice of the source; otherwise each code is
+  // serialized as upstream does.
+  string serialize(int start, int end, int offset, bool expandTabs) {
+    string source = this.parser.source;
+    int length = source.length;
+    int at = offset;
+    bool atTab = false;
+    bool plain = true;
+    for (int index = start; index < end; index++) {
+      int code = this.codes[index];
+      if (code >= 0) {
+        if (at >= length || source.codeUnitAt(at) != code) {
+          plain = false;
+          break;
+        }
+        at++;
+        atTab = false;
+      } else if (code == VS) {
+        if (expandTabs || !atTab) {
+          plain = false;
+          break;
+        }
+      } else if (code == HT) {
+        if (expandTabs || at >= length || source.codeUnitAt(at) != 9) {
+          plain = false;
+          break;
+        }
+        at++;
+        atTab = true;
+      } else if (code == CRLF) {
+        if (at + 1 >= length || source.codeUnitAt(at) != 13 || source.codeUnitAt(at + 1) != 10) {
+          plain = false;
+          break;
+        }
+        at += 2;
+        atTab = false;
+      } else {
+        int expected = if (code == -5) { 13 } else { 10 };
+        if (at >= length || source.codeUnitAt(at) != expected) {
+          plain = false;
+          break;
+        }
+        at++;
+        atTab = false;
+      }
+    }
+    if (plain) {
+      return source.slice(offset, at);
+    }
+    return this.serializeCodes(start, end, expandTabs);
+  }
+
+  string serializeCodes(int start, int end, bool expandTabs) {
     string result = "";
     bool atTab = false;
     int runStart = -1;

@@ -1,6 +1,7 @@
 // micromark/lib/parse.js and constructs.js: the CommonMark syntax plus extensions, combined once.
 
 import { CR, CRLF, HT, LF, SPACE, VS } from "./codes.lil";
+import { preprocess } from "./preprocess.lil";
 import { Construct, ConstructMap, Constructs, Parser, Tokenizer } from "./tokenizer.lil";
 import { contentInit, document, flow, stringInit, textInit, textResolveConstruct } from "./initialize.lil";
 import { subtokenize } from "./subtokenize.lil";
@@ -143,11 +144,12 @@ export Parser createParser(Constructs constructs) {
   return new Parser(constructs, document, flow, contentInit, stringInit, textInit);
 }
 
-// Tokenizes a whole document (preprocessed codes) and expands every chunk: micromark's
-// `postprocess(parse().document().write(codes))`.
-export int[] parseDocument(Parser parser, int[] codes) {
-  Tokenizer root = parser.create(0, 1, 1, 0);
-  root.write(codes);
+// Tokenizes a whole document and expands every chunk: micromark's
+// `postprocess(parse().document().write(preprocess()(value, undefined, true)))`.
+export int[] parseDocument(Parser parser, string value) {
+  parser.setSource(if (value.length > 0 && value.codeUnitAt(0) == 65279) { value.slice(1) } else { value });
+  Tokenizer root = parser.create(0, 0);
+  root.write(preprocess(value));
   int[] events = root.events;
   while (!subtokenize(events, parser)) {
     // Expand until stable.

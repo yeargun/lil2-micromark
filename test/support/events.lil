@@ -1,5 +1,4 @@
 // Test-only view of the event stream: one line per event, `enter|exit type sl:sc:so-el:ec:eo`.
-import { preprocess } from "../../src/preprocess.lil";
 import { combineAll, createParser, parseDocument } from "../../src/parse.lil";
 import { Parser, Tokens, eventToken, isEnter } from "../../src/tokenizer.lil";
 import { CORE_TYPE_COUNT, typeNames } from "../../src/types.lil";
@@ -117,12 +116,12 @@ string nameOf(int type) {
 
 export string eventsText(string value) {
   Parser parser = createParser(combineAll([]));
-  int[] events = parseDocument(parser, preprocess(value));
+  int[] events = parseDocument(parser, value);
   Tokens t = parser.tokens;
   string[] lines = [];
   for (int event of events) {
     int k = eventToken(event);
-    lines.push((if (isEnter(event)) { "enter " } else { "exit " }) + nameOf(t.type[k]) + " " + t.sLine[k] + ":" + t.sColumn[k] + ":" + t.sOffset[k] + "-" + t.eLine[k] + ":" + t.eColumn[k] + ":" + t.eOffset[k]);
+    lines.push((if (isEnter(event)) { "enter " } else { "exit " }) + nameOf(t.type[k]) + " " + parser.lineOf(t.sOffset[k]) + ":" + parser.columnOf(t.sOffset[k]) + ":" + t.sOffset[k] + "-" + parser.lineOf(t.eOffset[k]) + ":" + parser.columnOf(t.eOffset[k]) + ":" + t.eOffset[k]);
   }
   return lines.join("\n");
 }

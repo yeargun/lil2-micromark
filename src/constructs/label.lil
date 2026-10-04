@@ -229,7 +229,7 @@ Construct makeLabelEnd() {
         labelEndNok(code);
         return;
       }
-      defined = t.parser.defined.includes(normalizeIdentifier(t.serialize(tokens.eIndex[labelStart], t.index, false)));
+      defined = t.parser.defined.includes(normalizeIdentifier(t.serialize(tokens.eIndex[labelStart], t.index, tokens.eOffset[labelStart], false)));
       t.enter(tLabelEnd);
       t.enter(tLabelMarker);
       t.consume(code);

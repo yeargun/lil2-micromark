@@ -10,15 +10,13 @@ int size(Tokens tokens, int token) {
   return tokens.eOffset[token] - tokens.sOffset[token];
 }
 
-// `movePoint` on a token's start or end: column, offset and buffer index together.
+// `movePoint` on a token's start or end: offset and buffer index together (column follows the offset).
 void moveStart(Tokens tokens, int token, int by) {
-  tokens.sColumn[token] += by;
   tokens.sOffset[token] += by;
   tokens.sIndex[token] += by;
 }
 
 void moveEnd(Tokens tokens, int token, int by) {
-  tokens.eColumn[token] += by;
   tokens.eOffset[token] += by;
   tokens.eIndex[token] += by;
 }
@@ -55,12 +53,8 @@ int[] resolveAllAttention(int[] events, Tokenizer t) {
           tokens.endAtEndOf(group, closingSequence);
 
           tokens.eIndex[opener] = tokens.sIndex[openingSequence];
-          tokens.eLine[opener] = tokens.sLine[openingSequence];
-          tokens.eColumn[opener] = tokens.sColumn[openingSequence];
           tokens.eOffset[opener] = tokens.sOffset[openingSequence];
           tokens.sIndex[closer] = tokens.eIndex[closingSequence];
-          tokens.sLine[closer] = tokens.eLine[closingSequence];
-          tokens.sColumn[closer] = tokens.eColumn[closingSequence];
           tokens.sOffset[closer] = tokens.eOffset[closingSequence];
 
           int[] nextEvents = [];
