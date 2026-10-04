@@ -1,0 +1,23 @@
+{
+  "name": "@itslil/lil2-micromark",
+  "version": "0.0.0",
+  "private": true,
+  "description": "micromark, rewritten in typed LilScript: flat data, same HTML",
+  "type": "module",
+  "license": "MIT",
+  "author": "yeargun",
+  "repository": {"type": "git", "url": "git+https://github.com/yeargun/lil2-micromark.git"},
+  "homepage": "https://yeargun.github.io/lil2-micromark/",
+  "main": "./dist/micromark.js",
+  "exports": {".": "./dist/micromark.js"},
+  "scripts": {
+    "build:dev": "node scripts/build.mjs --dev",
+    "build": "node scripts/build.mjs",
+    "test": "node --test test/differential.test.mjs test/events.test.mjs"
+  },
+  "devDependencies": {
+    "character-entities": "2.0.2",
+    "commonmark.json": "^0.31.0",
+    "micromark": "4.0.2"
+  }
+}

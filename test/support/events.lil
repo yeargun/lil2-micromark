@@ -1,0 +1,128 @@
+// Test-only view of the event stream: one line per event, `enter|exit type sl:sc:so-el:ec:eo`.
+import { preprocess } from "../../src/preprocess.lil";
+import { combineAll, createParser, parseDocument } from "../../src/parse.lil";
+import { Parser, Tokens, eventToken, isEnter } from "../../src/tokenizer.lil";
+import { CORE_TYPE_COUNT, typeNames } from "../../src/types.lil";
+
+// Names in id order: core types first, then registered ones. Used by debugging and the JSON test views.
+string[] coreNames = [
+  "data",
+  "whitespace",
+  "lineEnding",
+  "lineEndingBlank",
+  "linePrefix",
+  "lineSuffix",
+  "atxHeading",
+  "atxHeadingSequence",
+  "atxHeadingText",
+  "autolink",
+  "autolinkEmail",
+  "autolinkMarker",
+  "autolinkProtocol",
+  "characterEscape",
+  "characterEscapeValue",
+  "characterReference",
+  "characterReferenceMarker",
+  "characterReferenceMarkerNumeric",
+  "characterReferenceMarkerHexadecimal",
+  "characterReferenceValue",
+  "codeFenced",
+  "codeFencedFence",
+  "codeFencedFenceSequence",
+  "codeFencedFenceInfo",
+  "codeFencedFenceMeta",
+  "codeFlowValue",
+  "codeIndented",
+  "codeText",
+  "codeTextData",
+  "codeTextPadding",
+  "codeTextSequence",
+  "content",
+  "definition",
+  "definitionDestination",
+  "definitionDestinationLiteral",
+  "definitionDestinationLiteralMarker",
+  "definitionDestinationRaw",
+  "definitionDestinationString",
+  "definitionLabel",
+  "definitionLabelMarker",
+  "definitionLabelString",
+  "definitionMarker",
+  "definitionTitle",
+  "definitionTitleMarker",
+  "definitionTitleString",
+  "emphasis",
+  "emphasisSequence",
+  "emphasisText",
+  "escapeMarker",
+  "hardBreakEscape",
+  "hardBreakTrailing",
+  "htmlFlow",
+  "htmlFlowData",
+  "htmlText",
+  "htmlTextData",
+  "image",
+  "label",
+  "labelText",
+  "labelLink",
+  "labelImage",
+  "labelMarker",
+  "labelImageMarker",
+  "labelEnd",
+  "link",
+  "paragraph",
+  "reference",
+  "referenceMarker",
+  "referenceString",
+  "resource",
+  "resourceDestination",
+  "resourceDestinationLiteral",
+  "resourceDestinationLiteralMarker",
+  "resourceDestinationRaw",
+  "resourceDestinationString",
+  "resourceMarker",
+  "resourceTitle",
+  "resourceTitleMarker",
+  "resourceTitleString",
+  "setextHeading",
+  "setextHeadingText",
+  "setextHeadingLine",
+  "setextHeadingLineSequence",
+  "strong",
+  "strongSequence",
+  "strongText",
+  "thematicBreak",
+  "thematicBreakSequence",
+  "blockQuote",
+  "blockQuotePrefix",
+  "blockQuoteMarker",
+  "blockQuotePrefixWhitespace",
+  "listOrdered",
+  "listUnordered",
+  "listItemIndent",
+  "listItemMarker",
+  "listItemPrefix",
+  "listItemPrefixWhitespace",
+  "listItemValue",
+  "chunkDocument",
+  "chunkContent",
+  "chunkFlow",
+  "chunkText",
+  "chunkString"
+];
+
+string nameOf(int type) {
+  return if (type < CORE_TYPE_COUNT) { coreNames[type] } else { typeNames[type - CORE_TYPE_COUNT] };
+}
+
+export string eventsText(string value) {
+  Parser parser = createParser(combineAll([]));
+  int[] events = parseDocument(parser, preprocess(value));
+  Tokens t = parser.tokens;
+  string[] lines = [];
+  for (int event of events) {
+    int k = eventToken(event);
+    lines.push((if (isEnter(event)) { "enter " } else { "exit " }) + nameOf(t.type[k]) + " " + t.sLine[k] + ":" + t.sColumn[k] + ":" + t.sOffset[k] + "-" + t.eLine[k] + ":" + t.eColumn[k] + ":" + t.eOffset[k]);
+  }
+  return lines.join("\n");
+}

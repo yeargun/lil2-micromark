@@ -1,0 +1,11 @@
+[policy]
+version = 3
+[javascript]
+priority = "size-first"
+assume_pristine_builtins = true
+[delivery]
+mode = "single"
+directory = "."
+entry_names = "events.js"
+[delivery.entries]
+index = "events.lil"

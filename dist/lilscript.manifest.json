@@ -1,0 +1,342 @@
+{
+  "version": 3,
+  "codec": "brotli",
+  "outputs": [
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "micromark.js",
+          "dynamic": false,
+          "closure": [
+            "micromark.js"
+          ],
+          "row": 21466,
+          "raw_row": 66613
+        }
+      ],
+      "files": [
+        {
+          "file": "micromark.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "index.lil",
+            "preprocess.lil",
+            "codes.lil",
+            "parse.lil",
+            "tokenizer.lil",
+            "initialize.lil",
+            "types.lil",
+            "factories.lil",
+            "constructs/basic.lil",
+            "util.lil",
+            "entities.lil",
+            "constructs/flow.lil",
+            "subtokenize.lil",
+            "constructs/containers.lil",
+            "constructs/html-flow.lil",
+            "constructs/inline.lil",
+            "constructs/attention.lil",
+            "constructs/label.lil",
+            "compile.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 66613,
+          "codec_bytes": 21466,
+          "sha256": "788684df9bbebfa7f5fd08d2400df9058d1118529dbc336ac7f33892a781d6f4"
+        }
+      ],
+      "side_effects": [
+        "micromark.js"
+      ],
+      "codec_total": 21466,
+      "rows_total": 21466,
+      "setters": 0,
+      "output": "primary",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        85,
+        38,
+        166,
+        6,
+        128,
+        87,
+        191,
+        71,
+        133,
+        248,
+        173,
+        202,
+        199,
+        190,
+        52,
+        218,
+        101,
+        75,
+        162,
+        145,
+        96,
+        20,
+        252,
+        240,
+        161,
+        23,
+        158,
+        12,
+        170,
+        72,
+        183,
+        140
+      ]
+    }
+  ],
+  "source_sha256": "569637f7dc1e5fabd99228e2ea8f276e7d960f6bd80dd48edac980c1820d6cd9",
+  "inputs": {
+    "root": 0,
+    "entries": [
+      {
+        "name": "index",
+        "module": 0
+      }
+    ],
+    "modules": [
+      {
+        "path": "/home/azureuser/lil2-micromark/src/index.lil",
+        "bytes": 930,
+        "sha256": "3b01ea663559af752a5c10e6ef81c1d0ef392afa79a9446de1b0147375917df5",
+        "dependencies": [
+          1,
+          3,
+          18,
+          4
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/preprocess.lil",
+        "bytes": 1296,
+        "sha256": "e023cdadf51326535197f3b564a6af05a8f3f9f9abdfda451e02d63c429885dc",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/codes.lil",
+        "bytes": 2704,
+        "sha256": "d019f2dd7ebbd8d7ff3890d107825a79063336b0834903f71d2b00ac4e89f027",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/parse.lil",
+        "bytes": 5394,
+        "sha256": "0d66e80f7bf8508a3c30396b07b7ee9c7206f40a27b7e05cdd681003b81c357d",
+        "dependencies": [
+          2,
+          4,
+          5,
+          12,
+          8,
+          11,
+          13,
+          14,
+          15,
+          16,
+          17
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/tokenizer.lil",
+        "bytes": 20802,
+        "sha256": "130e8b0c3decd444fdfff17c7e1751e24eb3d0c09fdf1224af42b987601d21d4",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/initialize.lil",
+        "bytes": 14574,
+        "sha256": "2546fb7e50a4fc70490be44df042475b725179aa523b4b8afc776754150781d1",
+        "dependencies": [
+          2,
+          6,
+          4,
+          7,
+          8,
+          11
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/types.lil",
+        "bytes": 4783,
+        "sha256": "70162c604484f3e4b2b2d1964dad61914279e8fbd328b72f7c60584f1dfb67fb",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/factories.lil",
+        "bytes": 7493,
+        "sha256": "ca80919c1bc134c2439a6fd447008f190ad049daa1a19a1585ca0fc212baef53",
+        "dependencies": [
+          2,
+          6,
+          4
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/constructs/basic.lil",
+        "bytes": 18514,
+        "sha256": "0043833b66f6994592261b0f29ed1488e1f489be17748c87e446dc6cbcb57bf0",
+        "dependencies": [
+          2,
+          6,
+          4,
+          7,
+          9
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/util.lil",
+        "bytes": 5501,
+        "sha256": "b8d0f71950b3bd237a9b997001684685fc4edf11af8c58514b1aa810e9f6bac5",
+        "dependencies": [
+          2,
+          10
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/entities.lil",
+        "bytes": 37348,
+        "sha256": "9c608b959bfcf493e0b34182022531fc250df41de8a8605e952a92a741fcf025",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/constructs/flow.lil",
+        "bytes": 12843,
+        "sha256": "f4838eb0395302eba1f9037f890fff6fcb993a46884fa7378c3c39b54d283640",
+        "dependencies": [
+          2,
+          6,
+          4,
+          7,
+          12,
+          9
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/subtokenize.lil",
+        "bytes": 8392,
+        "sha256": "5f0a61592b5c87eb5d69792c56b4db62941f1e18132e4164f21e3ab67c431ece",
+        "dependencies": [
+          2,
+          6,
+          4
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/constructs/containers.lil",
+        "bytes": 7917,
+        "sha256": "5ba2cb96d2444edc1658c18e08aefc5e42d379634904c10209d6d3e3ac168485",
+        "dependencies": [
+          2,
+          6,
+          4,
+          7,
+          8
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/constructs/html-flow.lil",
+        "bytes": 14512,
+        "sha256": "97444fb17b022a4c5cdfd6e13339f628135e51a209940f23cc5efa5fd2cbd30d",
+        "dependencies": [
+          2,
+          6,
+          4,
+          8
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/constructs/inline.lil",
+        "bytes": 12738,
+        "sha256": "69be8f843c3ac26b7526c45ecd04f9bd94e6e298ab49b05c85bdd17923c8bab4",
+        "dependencies": [
+          2,
+          6,
+          4,
+          7
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/constructs/attention.lil",
+        "bytes": 5920,
+        "sha256": "a9be581609c4707e51941a7bcdf5a4b2e2f0d2af1c85523baffc05ac4dcd1cc5",
+        "dependencies": [
+          2,
+          6,
+          4
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/constructs/label.lil",
+        "bytes": 10298,
+        "sha256": "9b4b42804a3a8080555cf19ab1475270bae295215fbd5492fa0ec1502e360c7d",
+        "dependencies": [
+          2,
+          6,
+          4,
+          7,
+          9
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lil2-micromark/src/compile.lil",
+        "bytes": 18786,
+        "sha256": "decab45a0a34fb8fe25054684331bebd93fbf0171400a008881e0824fc9045e4",
+        "dependencies": [
+          2,
+          6,
+          4,
+          9
+        ],
+        "dynamic_dependencies": []
+      }
+    ],
+    "host_modules": [],
+    "host_reserved": []
+  }
+}
