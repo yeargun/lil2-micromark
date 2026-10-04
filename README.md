@@ -11,16 +11,23 @@ upstream's behaviour exactly and changes the API so the compiler can flatten eve
 
 | upstream micromark | lil2-micromark |
 |---|---|
-| a point object per position (`{line, column, offset, _index, _bufferIndex}`) | four ints on the tokenizer, copied into token arrays |
+| a point object per position (`{line, column, offset, _index, _bufferIndex}`) | ints on the tokenizer; a token keeps its start and end offset, and line and column come from one line table |
 | a token object per token | an `int`; fields in parallel `int[]` arrays |
 | an event is `['enter', token, context]` | an event is one `int` (`token * 2 + kind`) |
-| token types are strings | token types are ints; extensions register theirs |
-| chunks of strings and codes | one `int[]` of codes per tokenizer |
+| token types are strings (`'codeFenced'`, extensions' own) | token types are compile-time ints; each extension package owns a range |
+| construct names, `disable: {null: ['codeIndented']}` | construct ids, `disable: [C_CODE_INDENTED]` |
+| `parser.defined` (an array of labels) | labels interned to int ids, with what each one defines |
+| chunks of strings and codes | one `int[]` of codes per tokenizer; token text is a slice of the source |
 | options objects | `micromark(value, allowDangerousHtml, allowDangerousProtocol)` |
 | `stream()`, chunked `write()`, `encoding` | not provided (whole-document API) |
 
 The constructs, attempts, backtracking and resolvers are upstream's algorithm, state for state. Only the data
 structures changed.
+
+Two builds, as decode-named-character-reference's condition map has them: `dist/` (Node, workers, Deno, …)
+carries the 2,125-entry named-reference table; `dist/browser/` (the `browser` condition) decodes named references
+with the document's own HTML parser, as upstream's browser graph does, so the table is neither downloaded nor
+unpacked at load.
 
 ## Use
 
@@ -62,6 +69,7 @@ Loading is slower by the one-time decoding of the 2,125-entry entity table, whic
 every named character reference, edge cases (CR/CRLF, NUL, BOM, tabs, containers, HTML kinds, references)
 and the benchmark documents, in safe and dangerous modes. `test/events.test.mjs` compares the whole event stream
 with upstream's parser, including every token's type, order and start/end line, column and offset.
+`test/browser.test.mjs` runs the browser build in Chromium and Firefox on the same corpus.
 
 ```sh
 npm install
