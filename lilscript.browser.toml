@@ -1,0 +1,38 @@
+# The browser build: the package's `browser` condition. Named character references are decoded by the
+# document (decode-named-character-reference's `index.dom.js`), so the entity table stays out.
+[policy]
+version = 3
+
+[policy.tactics]
+startup-reconstruction = "on"
+recurring-reconstruction = "off"
+string-array-packing = "off"
+
+[javascript]
+priority = "size-first"
+assume_pristine_builtins = true
+strip_debug = true
+assume_pure_property_reads = true
+assume_unconstructed_callbacks = true
+
+[effort]
+level = 15
+
+[objective]
+codecs = "brotli"
+
+[mangle]
+identifiers = true
+properties = true
+pool_strings = true
+
+[defines]
+BROWSER = true
+
+[delivery]
+mode = "single"
+directory = "dist/browser"
+entry_names = "micromark.js"
+
+[delivery.entries]
+index = "src/index.lil"

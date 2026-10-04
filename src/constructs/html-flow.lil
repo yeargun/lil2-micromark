@@ -2,7 +2,7 @@
 
 import { EOF, asciiAlpha, asciiAlphanumeric, charOf, markdownLineEnding, markdownLineEndingOrSpace, markdownSpace } from "../codes.lil";
 import { tHtmlFlow, tHtmlFlowData, tLineEnding, tLinePrefix } from "../types.lil";
-import { Construct, Tokenizer, eventToken, isEnter, noState, splice } from "../tokenizer.lil";
+import { C_HTML_FLOW, C_NONE, Construct, Tokenizer, eventToken, isEnter, noState, splice } from "../tokenizer.lil";
 import { blankLine } from "./basic.lil";
 
 export string[] htmlBlockNames = ["address", "article", "aside", "base", "basefont", "blockquote", "body", "caption", "center", "col", "colgroup", "dd", "details", "dialog", "dir", "div", "dl", "dt", "fieldset", "figcaption", "figure", "footer", "form", "frame", "frameset", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hr", "html", "iframe", "legend", "li", "link", "main", "menu", "menuitem", "nav", "noframes", "ol", "optgroup", "option", "p", "param", "search", "section", "summary", "table", "tbody", "td", "tfoot", "th", "thead", "title", "tr", "track", "ul"];
@@ -35,7 +35,7 @@ int[] resolveToHtmlFlow(int[] events, Tokenizer t) {
 Construct nonLazyContinuationStart = makeNonLazyContinuationStart();
 
 Construct makeNonLazyContinuationStart() {
-  Construct c = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     func(int)->void after = (int code) => {
       if (t.parser.isLazy(t.line)) {
         nok(code);
@@ -61,7 +61,7 @@ Construct makeNonLazyContinuationStart() {
 Construct blankLineBefore = makeBlankLineBefore();
 
 Construct makeBlankLineBefore() {
-  Construct c = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => (int code) => {
+  Construct c = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => (int code) => {
     t.enter(tLineEnding);
     t.consume(code);
     t.exit(tLineEnding);
@@ -74,7 +74,7 @@ Construct makeBlankLineBefore() {
 export Construct htmlFlow = makeHtmlFlow();
 
 Construct makeHtmlFlow() {
-  Construct c = new Construct("htmlFlow", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_HTML_FLOW, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     int marker = 0;
     bool closingTag = false;
     string buffer = "";

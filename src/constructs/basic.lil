@@ -2,12 +2,11 @@
 // character-escape, character-reference, code-indented, heading-atx, setext-underline, code-text.
 
 import { EOF, SPACE, TAB_SIZE, asciiAlphanumeric, asciiDigit, asciiHexDigit, asciiPunctuation, markdownLineEnding, markdownLineEndingOrSpace, markdownSpace } from "../codes.lil";
-import { defineType, tAtxHeading, tAtxHeadingSequence, tAtxHeadingText, tCharacterEscape, tCharacterEscapeValue, tCharacterReference, tCharacterReferenceMarker, tCharacterReferenceMarkerHexadecimal, tCharacterReferenceMarkerNumeric, tCharacterReferenceValue, tChunkText, tCodeFlowValue, tCodeIndented, tCodeText, tCodeTextData, tCodeTextPadding, tCodeTextSequence, tContent, tDefinition, tEscapeMarker, tHardBreakEscape, tLineEnding, tLinePrefix, tLineSuffix, tParagraph, tSetextHeading, tSetextHeadingLine, tSetextHeadingLineSequence, tSetextHeadingText, tThematicBreak, tThematicBreakSequence, tWhitespace } from "../types.lil";
-import { CT_TEXT, Construct, Tokenizer, enterEvent, eventToken, exitEvent, isEnter, newToken, noState, serializeToken, splice } from "../tokenizer.lil";
+import { tAtxHeading, tSpace, tAtxHeadingSequence, tAtxHeadingText, tCharacterEscape, tCharacterEscapeValue, tCharacterReference, tCharacterReferenceMarker, tCharacterReferenceMarkerHexadecimal, tCharacterReferenceMarkerNumeric, tCharacterReferenceValue, tChunkText, tCodeFlowValue, tCodeIndented, tCodeText, tCodeTextData, tCodeTextPadding, tCodeTextSequence, tContent, tDefinition, tEscapeMarker, tHardBreakEscape, tLineEnding, tLinePrefix, tLineSuffix, tParagraph, tSetextHeading, tSetextHeadingLine, tSetextHeadingLineSequence, tSetextHeadingText, tThematicBreak, tThematicBreakSequence, tWhitespace } from "../types.lil";
+import { CT_TEXT, C_CHARACTER_ESCAPE, C_CHARACTER_REFERENCE, C_CODE_INDENTED, C_CODE_TEXT, C_HARD_BREAK_ESCAPE, C_HEADING_ATX, C_LINE_ENDING, C_NONE, C_SETEXT_UNDERLINE, C_THEMATIC_BREAK, Construct, Tokenizer, enterEvent, eventToken, exitEvent, isEnter, newToken, noState, serializeToken, splice } from "../tokenizer.lil";
 import { factorySpace } from "../factories.lil";
 import { decodeNamed } from "../util.lil";
 
-export int tSpace = defineType("space");
 
 int typeAt(Tokenizer t, int[] events, int index) {
   return t.tokens.type[eventToken(events[index])];
@@ -18,7 +17,7 @@ int typeAt(Tokenizer t, int[] events, int index) {
 export Construct blankLine = makeBlankLine();
 
 Construct makeBlankLine() {
-  Construct c = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     func(int)->void after = (int code) => {
       if (code == EOF || markdownLineEnding(code)) {
         ok(code);
@@ -40,7 +39,7 @@ Construct makeBlankLine() {
 
 // --- line ending (text) ---------------------------------------------------------------------
 
-export Construct lineEnding = new Construct("lineEnding", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => (int code) => {
+export Construct lineEnding = new Construct(C_LINE_ENDING, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => (int code) => {
   t.enter(tLineEnding);
   t.consume(code);
   t.exit(tLineEnding);
@@ -49,7 +48,7 @@ export Construct lineEnding = new Construct("lineEnding", (Tokenizer t, bool int
 
 // --- thematic break -------------------------------------------------------------------------
 
-export Construct thematicBreak = new Construct("thematicBreak", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+export Construct thematicBreak = new Construct(C_THEMATIC_BREAK, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
   int size = 0;
   int marker = 0;
   func(int)->void atBreak = noState;
@@ -90,7 +89,7 @@ export Construct thematicBreak = new Construct("thematicBreak", (Tokenizer t, bo
 
 // --- hard break (escape) --------------------------------------------------------------------
 
-export Construct hardBreakEscape = new Construct("hardBreakEscape", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+export Construct hardBreakEscape = new Construct(C_HARD_BREAK_ESCAPE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
   func(int)->void after = (int code) => {
     if (markdownLineEnding(code)) {
       t.exit(tHardBreakEscape);
@@ -108,7 +107,7 @@ export Construct hardBreakEscape = new Construct("hardBreakEscape", (Tokenizer t
 
 // --- character escape -----------------------------------------------------------------------
 
-export Construct characterEscape = new Construct("characterEscape", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+export Construct characterEscape = new Construct(C_CHARACTER_ESCAPE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
   func(int)->void inside = (int code) => {
     if (asciiPunctuation(code)) {
       t.enter(tCharacterEscapeValue);
@@ -142,7 +141,7 @@ bool referenceDigit(int test, int code) {
   return asciiDigit(code);
 }
 
-export Construct characterReference = new Construct("characterReference", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+export Construct characterReference = new Construct(C_CHARACTER_REFERENCE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
   int size = 0;
   int max = 0;
   int test = 0;
@@ -220,7 +219,7 @@ bool indentedEnough(Tokenizer t) {
 Construct codeIndentedFurtherStart = makeFurtherStart();
 
 Construct makeFurtherStart() {
-  Construct c = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     func(int)->void furtherStart = noState;
     func(int)->void afterPrefix = (int code) => {
       if (indentedEnough(t)) {
@@ -251,7 +250,7 @@ Construct makeFurtherStart() {
   return c;
 }
 
-export Construct codeIndented = new Construct("codeIndented", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+export Construct codeIndented = new Construct(C_CODE_INDENTED, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
   func(int)->void atBreak = noState;
   func(int)->void inside = noState;
   func(int)->void after = (int code) => {
@@ -325,7 +324,7 @@ int[] resolveHeadingAtx(int[] events, Tokenizer t) {
 export Construct headingAtx = makeHeadingAtx();
 
 Construct makeHeadingAtx() {
-  Construct c = new Construct("headingAtx", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_HEADING_ATX, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     int size = 0;
     func(int)->void atBreak = noState;
     func(int)->void sequenceOpen = noState;
@@ -435,7 +434,7 @@ int[] resolveToSetextUnderline(int[] events, Tokenizer t) {
 export Construct setextUnderline = makeSetextUnderline();
 
 Construct makeSetextUnderline() {
-  Construct c = new Construct("setextUnderline", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_SETEXT_UNDERLINE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     int marker = 0;
     func(int)->void after = (int code) => {
       if (code == EOF || markdownLineEnding(code)) {
@@ -529,7 +528,7 @@ int[] resolveCodeText(int[] events, Tokenizer t) {
 export Construct codeText = makeCodeText();
 
 Construct makeCodeText() {
-  Construct c = new Construct("codeText", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_CODE_TEXT, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     int sizeOpen = 0;
     int size = 0;
     int token = -1;

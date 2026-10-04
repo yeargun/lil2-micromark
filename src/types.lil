@@ -1,4 +1,4 @@
-// Token types (micromark-util-symbol `types`) as ints. Extensions add their own through `defineType`.
+// Token types (micromark-util-symbol `types`) as ints.
 
 export const int tData = 0;
 export const int tWhitespace = 1;
@@ -104,18 +104,15 @@ export const int tChunkFlow = 100;
 export const int tChunkText = 101;
 export const int tChunkString = 102;
 
-export const int CORE_TYPE_COUNT = 103;
+// Types upstream spells as string literals (`'space'` in code text, `'attentionSequence'`), and the list item
+// token mdast-util-from-markdown inserts when it prepares a list.
+export const int tSpace = 103;
+export const int tAttentionSequence = 104;
+export const int tListItem = 105;
 
-// Names of the types extensions registered, in id order from CORE_TYPE_COUNT. The core names live
-// in the test support code; production never needs them.
-export string[] typeNames = [];
+export const int CORE_TYPE_COUNT = 106;
 
-// Returns the id of a type name, registering it if new. Extensions call this once, at definition time.
-export int defineType(string name) {
-  int index = typeNames.indexOf(name);
-  if (index >= 0) {
-    return CORE_TYPE_COUNT + index;
-  }
-  typeNames.push(name);
-  return CORE_TYPE_COUNT + typeNames.length - 1;
-}
+// Every token type is a compile-time int: each extension package of the family owns a range.
+export const int TYPES_GFM = 112;
+export const int TYPES_MATH = 160;
+export const int TYPE_LIMIT = 176;

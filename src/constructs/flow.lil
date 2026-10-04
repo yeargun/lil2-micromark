@@ -2,7 +2,7 @@
 
 import { EOF, TAB_SIZE, markdownLineEnding, markdownLineEndingOrSpace, markdownSpace } from "../codes.lil";
 import { tChunkContent, tChunkString, tCodeFenced, tCodeFencedFence, tCodeFencedFenceInfo, tCodeFencedFenceMeta, tCodeFencedFenceSequence, tCodeFlowValue, tContent, tDefinition, tDefinitionDestination, tDefinitionDestinationLiteral, tDefinitionDestinationLiteralMarker, tDefinitionDestinationRaw, tDefinitionDestinationString, tDefinitionLabel, tDefinitionLabelMarker, tDefinitionLabelString, tDefinitionMarker, tDefinitionTitle, tDefinitionTitleMarker, tDefinitionTitleString, tLineEnding, tLinePrefix, tWhitespace } from "../types.lil";
-import { CT_CONTENT, CT_STRING, Construct, Tokenizer, eventToken, noState, serializeToken } from "../tokenizer.lil";
+import { CT_CONTENT, CT_STRING, C_CODE_FENCED, C_CODE_INDENTED, C_DEFINITION, C_NONE, ID_DEFINITION, Construct, Tokenizer, eventToken, noState, serializeToken } from "../tokenizer.lil";
 import { factoryDestination, factoryLabel, factorySpace, factoryTitle, factoryWhitespace } from "../factories.lil";
 import { subtokenize } from "../subtokenize.lil";
 import { normalizeIdentifier } from "../util.lil";
@@ -23,7 +23,7 @@ int tailPrefixSize(Tokenizer t) {
 Construct nonLazyContinuation = makeNonLazyContinuation();
 
 Construct makeNonLazyContinuation() {
-  Construct c = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     func(int)->void lineStart = (int code) => {
       if (t.parser.isLazy(t.line)) {
         nok(code);
@@ -51,12 +51,12 @@ export Construct nonLazyContinuationConstruct = nonLazyContinuation;
 export Construct codeFenced = makeCodeFenced();
 
 Construct makeCodeFenced() {
-  Construct c = new Construct("codeFenced", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_CODE_FENCED, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     int initialPrefix = 0;
     int sizeOpen = 0;
     int marker = 0;
 
-    Construct closeStart = new Construct("", (Tokenizer ct, bool closeInterrupt, func(int)->void closeOk, func(int)->void closeNok) => {
+    Construct closeStart = new Construct(C_NONE, (Tokenizer ct, bool closeInterrupt, func(int)->void closeOk, func(int)->void closeNok) => {
       int size = 0;
       func(int)->void sequenceCloseAfter = (int code) => {
         if (code == EOF || markdownLineEnding(code)) {
@@ -96,7 +96,7 @@ Construct makeCodeFenced() {
       func(int)->void start = (int code) => {
         ct.enter(tCodeFencedFence);
         if (markdownSpace(code)) {
-          int max = if (t.parser.constructs.disable.includes("codeIndented")) { 0 } else { TAB_SIZE };
+          int max = if (t.parser.constructs.disabled[C_CODE_INDENTED]) { 0 } else { TAB_SIZE };
           factorySpace(ct, beforeSequenceClose, tLinePrefix, max)(code);
         } else {
           beforeSequenceClose(code);
@@ -263,13 +263,13 @@ Construct makeCodeFenced() {
 Construct continuationConstruct = makeContinuation();
 
 Construct makeContinuation() {
-  Construct c = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     func(int)->void prefixed = (int code) => {
       if (code == EOF || markdownLineEnding(code)) {
         nok(code);
         return;
       }
-      if (!t.parser.constructs.disable.includes("codeIndented") && tailPrefixSize(t) >= TAB_SIZE) {
+      if (!t.parser.constructs.disabled[C_CODE_INDENTED] && tailPrefixSize(t) >= TAB_SIZE) {
         ok(code);
         return;
       }
@@ -290,7 +290,7 @@ Construct makeContinuation() {
 export Construct content = makeContent();
 
 Construct makeContent() {
-  Construct c = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     int previous = -1;
     func(int)->void chunkInside = noState;
     func(int)->void contentEnd = (int code) => {
@@ -340,7 +340,7 @@ Construct makeContent() {
 Construct titleBefore = makeTitleBefore();
 
 Construct makeTitleBefore() {
-  Construct c = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     func(int)->void titleAfterOptionalWhitespace = (int code) => {
       if (code == EOF || markdownLineEnding(code)) {
         ok(code);
@@ -370,12 +370,12 @@ Construct makeTitleBefore() {
   return c;
 }
 
-export Construct definition = new Construct("definition", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+export Construct definition = new Construct(C_DEFINITION, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
   string identifier = "";
   func(int)->void afterWhitespace = (int code) => {
     if (code == EOF || markdownLineEnding(code)) {
       t.exit(tDefinition);
-      t.parser.defined.push(identifier);
+      t.parser.define(identifier, ID_DEFINITION);
       ok(code);
       return;
     }

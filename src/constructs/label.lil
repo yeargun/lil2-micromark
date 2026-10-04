@@ -2,7 +2,7 @@
 
 import { markdownLineEndingOrSpace } from "../codes.lil";
 import { tData, tImage, tLabel, tLabelEnd, tLabelImage, tLabelImageMarker, tLabelLink, tLabelMarker, tLabelText, tLink, tReference, tReferenceMarker, tReferenceString, tResource, tResourceDestination, tResourceDestinationLiteral, tResourceDestinationLiteralMarker, tResourceDestinationRaw, tResourceDestinationString, tResourceMarker, tResourceTitle, tResourceTitleMarker, tResourceTitleString } from "../types.lil";
-import { F_BALANCED, F_INACTIVE, Construct, Tokenizer, Tokens, defineResolver, enterEvent, eventToken, exitEvent, isEnter, newToken, noState, pushAll, resolveAllOf, splice } from "../tokenizer.lil";
+import { C_LABEL_END, C_LABEL_START_IMAGE, C_LABEL_START_LINK, C_NONE, ID_DEFINITION, F_BALANCED, F_INACTIVE, Construct, Tokenizer, Tokens, defineResolver, enterEvent, eventToken, exitEvent, isEnter, newToken, noState, pushAll, resolveAllOf, splice } from "../tokenizer.lil";
 import { factoryDestination, factoryLabel, factoryTitle, factoryWhitespace } from "../factories.lil";
 import { normalizeIdentifier } from "../util.lil";
 
@@ -80,7 +80,7 @@ int[] resolveToLabelEnd(int[] events, Tokenizer t) {
 
 // --- resource, full and collapsed references ------------------------------------------------
 
-Construct resourceConstruct = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+Construct resourceConstruct = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
   func(int)->void resourceEnd = (int code) => {
     if (code == 41) {
       t.enter(tResourceMarker);
@@ -139,10 +139,10 @@ Construct resourceConstruct = new Construct("", (Tokenizer t, bool interrupt, fu
   };
 });
 
-Construct referenceFullConstruct = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+Construct referenceFullConstruct = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
   func(int)->void referenceFullAfter = (int code) => {
     string label = t.sliceSerialize(eventToken(t.events[t.events.length - 1]), false);
-    if (t.parser.defined.includes(normalizeIdentifier(label.slice(1, label.length - 1)))) {
+    if (t.parser.defines(normalizeIdentifier(label.slice(1, label.length - 1)), ID_DEFINITION)) {
       ok(code);
     } else {
       nok(code);
@@ -156,7 +156,7 @@ Construct referenceFullConstruct = new Construct("", (Tokenizer t, bool interrup
   };
 });
 
-Construct referenceCollapsedConstruct = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+Construct referenceCollapsedConstruct = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
   func(int)->void referenceCollapsedOpen = (int code) => {
     if (code == 93) {
       t.enter(tReferenceMarker);
@@ -182,7 +182,7 @@ Construct referenceCollapsedConstruct = new Construct("", (Tokenizer t, bool int
 export Construct labelEnd = makeLabelEnd();
 
 Construct makeLabelEnd() {
-  Construct c = new Construct("labelEnd", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_LABEL_END, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     Tokens tokens = t.tokens;
     int index = t.events.length;
     int labelStart = -1;
@@ -229,7 +229,7 @@ Construct makeLabelEnd() {
         labelEndNok(code);
         return;
       }
-      defined = t.parser.defined.includes(normalizeIdentifier(t.serialize(tokens.eIndex[labelStart], t.index, tokens.eOffset[labelStart], false)));
+      defined = t.parser.defines(normalizeIdentifier(t.serialize(tokens.eIndex[labelStart], t.index, tokens.eOffset[labelStart], false)), ID_DEFINITION);
       t.enter(tLabelEnd);
       t.enter(tLabelMarker);
       t.consume(code);
@@ -249,7 +249,7 @@ Construct makeLabelEnd() {
 export Construct labelStartImage = makeLabelStartImage();
 
 Construct makeLabelStartImage() {
-  Construct c = new Construct("labelStartImage", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_LABEL_START_IMAGE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     func(int)->void after = (int code) => {
       if (code == 94 && t.parser.constructs.hiddenFootnoteSupport) {
         nok(code);
@@ -283,7 +283,7 @@ Construct makeLabelStartImage() {
 export Construct labelStartLink = makeLabelStartLink();
 
 Construct makeLabelStartLink() {
-  Construct c = new Construct("labelStartLink", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_LABEL_START_LINK, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     func(int)->void after = (int code) => {
       if (code == 94 && t.parser.constructs.hiddenFootnoteSupport) {
         nok(code);

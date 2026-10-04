@@ -1,10 +1,9 @@
 // micromark-core-commonmark: attention (emphasis and strong).
 
 import { GROUP_PUNCTUATION, classifyCharacter } from "../codes.lil";
-import { defineType, tData, tEmphasis, tEmphasisSequence, tEmphasisText, tStrong, tStrongSequence, tStrongText } from "../types.lil";
-import { F_CLOSE, F_OPEN, Construct, Tokenizer, Tokens, defineResolver, enterEvent, eventToken, exitEvent, isEnter, newToken, noState, pushAll, resolveAllOf, splice } from "../tokenizer.lil";
+import { tAttentionSequence, tData, tEmphasis, tEmphasisSequence, tEmphasisText, tStrong, tStrongSequence, tStrongText } from "../types.lil";
+import { C_ATTENTION, F_CLOSE, F_OPEN, Construct, Tokenizer, Tokens, defineResolver, enterEvent, eventToken, exitEvent, isEnter, newToken, noState, pushAll, resolveAllOf, splice } from "../tokenizer.lil";
 
-export int tAttentionSequence = defineType("attentionSequence");
 
 int size(Tokens tokens, int token) {
   return tokens.eOffset[token] - tokens.sOffset[token];
@@ -91,7 +90,7 @@ export int attentionResolver = defineResolver(resolveAllAttention);
 export Construct attention = makeAttention();
 
 Construct makeAttention() {
-  Construct c = new Construct("attention", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_ATTENTION, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     int[] attentionMarkers = t.parser.constructs.attentionMarkers;
     int previous = t.previous;
     int before = classifyCharacter(previous);

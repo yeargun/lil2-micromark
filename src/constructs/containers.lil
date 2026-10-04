@@ -2,12 +2,12 @@
 
 import { EOF, TAB_SIZE, asciiDigit, markdownSpace } from "../codes.lil";
 import { tBlockQuote, tBlockQuoteMarker, tBlockQuotePrefix, tBlockQuotePrefixWhitespace, tLinePrefix, tListItemIndent, tListItemMarker, tListItemPrefix, tListItemPrefixWhitespace, tListItemValue, tListOrdered, tListUnordered } from "../types.lil";
-import { F_CONTAINER, Construct, Tokenizer, eventToken, noState, serializeToken } from "../tokenizer.lil";
+import { C_BLOCK_QUOTE, C_CODE_INDENTED, C_LIST, C_NONE, F_CONTAINER, Construct, Tokenizer, eventToken, noState, serializeToken } from "../tokenizer.lil";
 import { factorySpace } from "../factories.lil";
 import { blankLine, thematicBreak } from "./basic.lil";
 
 int codeIndentedMax(Tokenizer t, int size) {
-  return if (t.parser.constructs.disable.includes("codeIndented")) { 0 } else { size };
+  return if (t.parser.constructs.disabled[C_CODE_INDENTED]) { 0 } else { size };
 }
 
 // The last event's token if it has `type`, else -1.
@@ -24,7 +24,7 @@ int tailOfType(Tokenizer t, int type) {
 export Construct blockQuote = makeBlockQuote();
 
 Construct makeBlockQuote() {
-  Construct c = new Construct("blockQuote", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_BLOCK_QUOTE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     func(int)->void after = (int code) => {
       if (markdownSpace(code)) {
         t.enter(tBlockQuotePrefixWhitespace);
@@ -54,7 +54,7 @@ Construct makeBlockQuote() {
       nok(code);
     };
   });
-  c.continuation = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  c.continuation = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     func(int)->void contBefore = (int code) => {
       t.attemptOne(blockQuote, ok, nok)(code);
     };
@@ -78,7 +78,7 @@ Construct makeBlockQuote() {
 Construct listItemPrefixWhitespaceConstruct = makeListItemPrefixWhitespace();
 
 Construct makeListItemPrefixWhitespace() {
-  Construct c = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     func(int)->void afterPrefix = (int code) => {
       if (!markdownSpace(code) && tailOfType(t, tListItemPrefixWhitespace) >= 0) {
         ok(code);
@@ -95,7 +95,7 @@ Construct makeListItemPrefixWhitespace() {
 Construct indentConstruct = makeIndent();
 
 Construct makeIndent() {
-  Construct c = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     func(int)->void afterPrefix = (int code) => {
       int tail = tailOfType(t, tListItemIndent);
       if (tail >= 0 && serializeToken(t.parser, tail, true).length == t.containerState.size) {
@@ -113,7 +113,7 @@ Construct makeIndent() {
 export Construct list = makeList();
 
 Construct makeList() {
-  Construct c = new Construct("list", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_LIST, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     int tailPrefix = tailOfType(t, tLinePrefix);
     int initialSize = if (tailPrefix >= 0) { serializeToken(t.parser, tailPrefix, true).length } else { 0 };
     int size = 0;
@@ -197,7 +197,7 @@ Construct makeList() {
     };
   });
 
-  c.continuation = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  c.continuation = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     t.containerState.closeFlow = false;
     func(int)->void notInCurrentItem = (int code) => {
       t.containerState.closeFlow = true;

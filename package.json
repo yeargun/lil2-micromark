@@ -6,18 +6,33 @@
   "type": "module",
   "license": "MIT",
   "author": "yeargun",
-  "repository": {"type": "git", "url": "git+https://github.com/yeargun/lil2-micromark.git"},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yeargun/lil2-micromark.git"
+  },
   "homepage": "https://yeargun.github.io/lil2-micromark/",
   "main": "./dist/micromark.js",
-  "exports": {".": "./dist/micromark.js"},
+  "exports": {
+    ".": {
+      "convex": "./dist/micromark.js",
+      "deno": "./dist/micromark.js",
+      "edge-light": "./dist/micromark.js",
+      "react-native": "./dist/micromark.js",
+      "worker": "./dist/micromark.js",
+      "workerd": "./dist/micromark.js",
+      "browser": "./dist/browser/micromark.js",
+      "default": "./dist/micromark.js"
+    }
+  },
   "scripts": {
     "build:dev": "node scripts/build.mjs --dev",
     "build": "node scripts/build.mjs",
-    "test": "node --test test/differential.test.mjs test/events.test.mjs"
+    "test": "node --test test/differential.test.mjs test/events.test.mjs test/browser.test.mjs"
   },
   "devDependencies": {
     "character-entities": "2.0.2",
     "commonmark.json": "^0.31.0",
-    "micromark": "4.0.2"
+    "micromark": "4.0.2",
+    "playwright-core": "^1.62.0"
   }
 }

@@ -20,7 +20,8 @@ export class SyntaxExtension {
   (Construct[])[] lists;
   Construct[] insideSpan;
   int[] attentionMarkers;
-  string[] disable;
+  // Construct ids to turn off (upstream `disable: {null: [...names]}`).
+  int[] disable;
   bool hiddenFootnoteSupport;
 
   init() {
@@ -84,8 +85,8 @@ export void combine(Constructs all, SyntaxExtension extension) {
   for (int marker of extension.attentionMarkers) {
     all.attentionMarkers.push(marker);
   }
-  for (string name of extension.disable) {
-    all.disable.push(name);
+  for (int id of extension.disable) {
+    all.disabled[id] = true;
   }
   if (extension.hiddenFootnoteSupport) {
     all.hiddenFootnoteSupport = true;

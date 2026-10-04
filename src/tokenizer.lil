@@ -37,12 +37,13 @@ export class Tokens {
   int[] next;
   int[] tokenizer;
   int[] child;
+  // The marker code of an attention sequence; an extension may keep an offset into `aux` here instead.
   int[] marker;
-  // Extension data per token (GFM table alignment, for one).
-  Map<int, string> data;
+  // Runs of ints that extensions attach to a token through its `marker` (a GFM table's alignments).
+  int[] aux;
 
   init() {
-    this.data = new Map<int, string>();
+    this.aux = [];
     this.type = [];
     this.contentType = [];
     this.flags = [];
@@ -150,9 +151,36 @@ export class ContainerState {
 
 export func(int)->void noState = (int code) => {};
 
+// Construct ids: upstream's construct `name`s, which `disable` lists. 0 is a construct without one.
+// Each extension package of the family owns a range, so every id is a compile-time int.
+export const int C_NONE = 0;
+export const int C_ATTENTION = 1;
+export const int C_AUTOLINK = 2;
+export const int C_BLOCK_QUOTE = 3;
+export const int C_CHARACTER_ESCAPE = 4;
+export const int C_CHARACTER_REFERENCE = 5;
+export const int C_CODE_FENCED = 6;
+export const int C_CODE_INDENTED = 7;
+export const int C_CODE_TEXT = 8;
+export const int C_DEFINITION = 9;
+export const int C_HARD_BREAK_ESCAPE = 10;
+export const int C_HEADING_ATX = 11;
+export const int C_HTML_FLOW = 12;
+export const int C_HTML_TEXT = 13;
+export const int C_LABEL_END = 14;
+export const int C_LABEL_START_IMAGE = 15;
+export const int C_LABEL_START_LINK = 16;
+export const int C_LINE_ENDING = 17;
+export const int C_LIST = 18;
+export const int C_SETEXT_UNDERLINE = 19;
+export const int C_THEMATIC_BREAK = 20;
+export const int CONSTRUCTS_GFM = 24;
+export const int CONSTRUCTS_MATH = 40;
+export const int CONSTRUCT_LIMIT = 48;
+
 // A construct. Functions that upstream leaves undefined are flagged off here.
 export class Construct {
-  string name;
+  int id;
   func(Tokenizer, bool, func(int)->void, func(int)->void)->func(int)->void tokenize;
   bool partial;
   bool concrete;
@@ -168,8 +196,8 @@ export class Construct {
   func(Tokenizer)->void exit;
   Construct? continuation;
 
-  init(string name, func(Tokenizer, bool, func(int)->void, func(int)->void)->func(int)->void tokenize) {
-    this.name = name;
+  init(int id, func(Tokenizer, bool, func(int)->void, func(int)->void)->func(int)->void tokenize) {
+    this.id = id;
     this.tokenize = tokenize;
     this.partial = false;
     this.concrete = false;
@@ -312,7 +340,8 @@ export class Constructs {
   ConstructMap text;
   Construct[] insideSpan;
   int[] attentionMarkers;
-  string[] disable;
+  // By construct id: whether an extension disabled it.
+  bool[] disabled;
   bool hiddenFootnoteSupport;
 
   init() {
@@ -325,18 +354,28 @@ export class Constructs {
     this.text = new ConstructMap();
     this.insideSpan = [];
     this.attentionMarkers = [];
-    this.disable = [];
+    this.disabled = [];
+    for (int id = 0; id < CONSTRUCT_LIMIT; id++) {
+      this.disabled.push(false);
+    }
   }
 }
+
+// What an identifier names (flags).
+export const int ID_DEFINITION = 1;
+export const int ID_FOOTNOTE = 2;
 
 export class Parser {
   Tokens tokens;
   Tokenizer[] tokenizers;
   Constructs constructs;
   Map<int, bool> lazy;
-  string[] defined;
-  // Footnote labels defined so far (micromark-extension-gfm-footnote's `parser.gfmFootnotes`).
-  string[] gfmFootnotes;
+  // Identifiers, interned: a label's micromark-util-normalize-identifier key becomes an int id that every
+  // later stage uses (mdast `identifier`, hast footnote and definition lookups). `identifierFlags` holds
+  // what the parse has defined so far (upstream `parser.defined` and `parser.gfmFootnotes`).
+  Map<string, int> identifierIds;
+  string[] identifierKeys;
+  int[] identifierFlags;
   // The document after preprocessing (BOM removed), and the offset each line starts at.
   string source;
   int[] lineStarts;
@@ -351,8 +390,9 @@ export class Parser {
     this.tokenizers = [];
     this.constructs = constructs;
     this.lazy = new Map<int, bool>();
-    this.defined = [];
-    this.gfmFootnotes = [];
+    this.identifierIds = new Map<string, int>();
+    this.identifierKeys = [];
+    this.identifierFlags = [];
     this.source = "";
     this.lineStarts = [0];
     this.documentInit = documentInit;
@@ -360,6 +400,34 @@ export class Parser {
     this.contentInit = contentInit;
     this.stringInit = stringInit;
     this.textInit = textInit;
+  }
+
+  // The id of a normalized identifier, interning it when new.
+  int identifier(string key) {
+    int? found = this.identifierIds.get(key);
+    if (found != null) {
+      return found;
+    }
+    int id = this.identifierKeys.length;
+    this.identifierIds.set(key, id);
+    this.identifierKeys.push(key);
+    this.identifierFlags.push(0);
+    return id;
+  }
+
+  // The id of a normalized identifier, or -1 when the document never mentioned it.
+  int findIdentifier(string key) {
+    return this.identifierIds.get(key) ?? -1;
+  }
+
+  void define(string key, int flag) {
+    int id = this.identifier(key);
+    this.identifierFlags[id] = this.identifierFlags[id] | flag;
+  }
+
+  bool defines(string key, int flag) {
+    int id = this.findIdentifier(key);
+    return id >= 0 && (this.identifierFlags[id] & flag) != 0;
   }
 
   // Sets the document text (without BOM) and builds the line table.
@@ -647,7 +715,7 @@ export class Tokenizer {
       if (!construct.partial) {
         t.currentConstruct = construct;
       }
-      if (construct.name != "" && t.parser.constructs.disable.includes(construct.name)) {
+      if (t.parser.constructs.disabled[construct.id]) {
         nok(code);
         return;
       }

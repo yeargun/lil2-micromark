@@ -2,12 +2,12 @@
 
 import { EOF, SPACE, TAB_SIZE, asciiAlpha, asciiAlphanumeric, asciiAtext, asciiControl, markdownLineEnding, markdownLineEndingOrSpace, markdownSpace } from "../codes.lil";
 import { tAutolink, tAutolinkEmail, tAutolinkMarker, tAutolinkProtocol, tHtmlText, tHtmlTextData, tLineEnding, tLinePrefix } from "../types.lil";
-import { Construct, Tokenizer, noState } from "../tokenizer.lil";
+import { C_AUTOLINK, C_CODE_INDENTED, C_HTML_TEXT, Construct, Tokenizer, noState } from "../tokenizer.lil";
 import { factorySpace } from "../factories.lil";
 
 // --- html (text) ----------------------------------------------------------------------------
 
-export Construct htmlText = new Construct("htmlText", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+export Construct htmlText = new Construct(C_HTML_TEXT, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
   int marker = 0;
   int index = 0;
   func(int)->void returnState = noState;
@@ -28,7 +28,7 @@ export Construct htmlText = new Construct("htmlText", (Tokenizer t, bool interru
   };
   func(int)->void lineEndingAfter = (int code) => {
     if (markdownSpace(code)) {
-      int max = if (t.parser.constructs.disable.includes("codeIndented")) { 0 } else { TAB_SIZE };
+      int max = if (t.parser.constructs.disabled[C_CODE_INDENTED]) { 0 } else { TAB_SIZE };
       factorySpace(t, lineEndingAfterPrefix, tLinePrefix, max)(code);
       return;
     }
@@ -401,7 +401,7 @@ export Construct htmlText = new Construct("htmlText", (Tokenizer t, bool interru
 
 // --- autolink -------------------------------------------------------------------------------
 
-export Construct autolink = new Construct("autolink", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+export Construct autolink = new Construct(C_AUTOLINK, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
   int size = 0;
   func(int)->void emailAtext = noState;
   func(int)->void emailAtSignOrDot = noState;

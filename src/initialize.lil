@@ -2,7 +2,7 @@
 
 import { EOF, HT, SPACE, TAB_SIZE, VS, markdownLineEnding } from "./codes.lil";
 import { tChunkFlow, tChunkText, tData, tHardBreakTrailing, tLineEnding, tLineEndingBlank, tLinePrefix, tLineSuffix, tParagraph } from "./types.lil";
-import { CT_FLOW, CT_TEXT, ContainerState, Construct, ConstructMap, Tokenizer, Tokens, defineResolver, enterEvent, eventToken, exitEvent, isEnter, newToken, noState, splice } from "./tokenizer.lil";
+import { CT_FLOW, CT_TEXT, C_CODE_INDENTED, C_NONE, Construct, ConstructMap, ContainerState, Tokenizer, Tokens, defineResolver, enterEvent, eventToken, exitEvent, isEnter, newToken, noState, splice } from "./tokenizer.lil";
 import { factorySpace } from "./factories.lil";
 import { blankLine } from "./constructs/basic.lil";
 import { content } from "./constructs/flow.lil";
@@ -20,12 +20,12 @@ class ContainerStack {
   }
 }
 
-Construct containerConstruct = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
-  int max = if (t.parser.constructs.disable.includes("codeIndented")) { 0 } else { TAB_SIZE };
+Construct containerConstruct = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  int max = if (t.parser.constructs.disabled[C_CODE_INDENTED]) { 0 } else { TAB_SIZE };
   return factorySpace(t, t.attemptMap(t.parser.constructs.document, ok, nok), tLinePrefix, max);
 });
 
-export Construct document = new Construct("", (Tokenizer self, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+export Construct document = new Construct(C_NONE, (Tokenizer self, bool interrupt, func(int)->void ok, func(int)->void nok) => {
   Tokens tokens = self.tokens;
   ContainerStack stack = new ContainerStack();
   int continued = 0;
@@ -225,7 +225,7 @@ export Construct document = new Construct("", (Tokenizer self, bool interrupt, f
 
 // --- flow -----------------------------------------------------------------------------------
 
-export Construct flow = new Construct("", (Tokenizer self, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+export Construct flow = new Construct(C_NONE, (Tokenizer self, bool interrupt, func(int)->void ok, func(int)->void nok) => {
   func(int)->void initial = noState;
   func(int)->void atBlankEnding = (int code) => {
     if (code == EOF) {
@@ -270,7 +270,7 @@ export Construct flow = new Construct("", (Tokenizer self, bool interrupt, func(
 
 // --- content --------------------------------------------------------------------------------
 
-export Construct contentInit = new Construct("", (Tokenizer self, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+export Construct contentInit = new Construct(C_NONE, (Tokenizer self, bool interrupt, func(int)->void ok, func(int)->void nok) => {
   int previous = -1;
   func(int)->void contentStart = noState;
   func(int)->void data = noState;
@@ -399,13 +399,13 @@ export int stringResolver = defineResolver(resolveAllText);
 export Construct textResolveConstruct = makeTextResolveConstruct();
 
 Construct makeTextResolveConstruct() {
-  Construct c = new Construct("", (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => noState);
+  Construct c = new Construct(C_NONE, (Tokenizer t, bool interrupt, func(int)->void ok, func(int)->void nok) => noState);
   c.resolveAll = stringResolver;
   return c;
 }
 
 Construct makeInlineInit(bool isText) {
-  Construct c = new Construct("", (Tokenizer self, bool interrupt, func(int)->void ok, func(int)->void nok) => {
+  Construct c = new Construct(C_NONE, (Tokenizer self, bool interrupt, func(int)->void ok, func(int)->void nok) => {
     ConstructMap constructs = if (isText) { self.parser.constructs.text } else { self.parser.constructs.string };
     func(int)->void start = noState;
     func(int)->void data = noState;

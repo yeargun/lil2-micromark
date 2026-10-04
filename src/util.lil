@@ -7,11 +7,42 @@ import { characterEntities } from "./entities.lil";
 extern JsValue String;
 extern JsValue Object;
 extern JsValue encodeURIComponent;
+extern JsValue document;
+
+// The browser build (the package's `browser` condition) decodes named references with the document's own
+// HTML parser, as decode-named-character-reference's `index.dom.js` does: the 2,125-entry table is neither
+// downloaded nor unpacked at load. Every reference is decoded twice (the tokenizer checks it, the compiler
+// decodes it), so valid ones are remembered; there are at most 2,231 of them.
+// `entities` is chosen at module initialization: a define read inside a function stays a runtime value when
+// the program imports a host module (React), and only this keeps the table out of such a browser build.
+export define bool BROWSER = false;
+JsValue entities = if (BROWSER) { JS.undefined() } else { characterEntities };
+JsValue decoder = if (BROWSER) { JS.invoke(document, "createElement", "i") } else { JS.undefined() };
+Map<string, string> decoded = new Map<string, string>();
+
+string? decodeInDocument(string name) {
+  string? known = decoded.get(name);
+  if (known != null) {
+    return known;
+  }
+  string reference = "&" + name + ";";
+  JS.set(decoder, "innerHTML", reference);
+  string character = JS.assume(JS.get(decoder, "textContent"));
+  // `&notit;` reads `¬it;`: a trailing `;` (unless the name is `semi`) means only a prefix matched.
+  if ((character.codeUnitAt(character.length - 1) == 59 && name != "semi") || character == reference) {
+    return null;
+  }
+  decoded.set(name, character);
+  return character;
+}
 
 // The value of a named reference without `&` and `;`, or null.
 export string? decodeNamed(string name) {
-  if (bool(Object.hasOwn(characterEntities, name))) {
-    return JS.assume(characterEntities[name]);
+  if (BROWSER) {
+    return decodeInDocument(name);
+  }
+  if (bool(Object.hasOwn(entities, name))) {
+    return JS.assume(entities[name]);
   }
   return null;
 }

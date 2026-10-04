@@ -47,7 +47,9 @@ export class Compiler {
   Tokens tokens;
   CompileOptions options;
   bool tags;
-  Map<string, Media> definitions;
+  // Definitions by identifier id (-1: none), as indexes into `definitionList`.
+  int[] definitionOf;
+  Media[] definitionList;
   (string[])[] buffers;
   Media[] mediaStack;
   bool[] tightStack;
@@ -71,7 +73,8 @@ export class Compiler {
     this.tokens = parser.tokens;
     this.options = options;
     this.tags = true;
-    this.definitions = new Map<string, Media>();
+    this.definitionOf = [];
+    this.definitionList = [];
     this.buffers = [[]];
     this.mediaStack = [];
     this.tightStack = [];
@@ -248,7 +251,13 @@ void onExitMedia(Compiler c, int token) {
   if (id == "") {
     id = media.labelId ?? "";
   }
-  Media context = if (media.destination == null) { c.definitions.get(normalizeIdentifier(id)) ?? media } else { media };
+  Media context = media;
+  if (media.destination == null) {
+    int found = c.parser.findIdentifier(normalizeIdentifier(id));
+    if (found >= 0 && found < c.definitionOf.length && c.definitionOf[found] >= 0) {
+      context = c.definitionList[c.definitionOf[found]];
+    }
+  }
   c.tags = true;
   while (index-- > 0) {
     if (c.mediaStack[index].image) {
@@ -512,10 +521,14 @@ export void installCommonmarkHandlers(Compiler c) {
   c.on(false, tData, onExitData);
   c.on(false, tDefinition, (Compiler c, int token) => {
     Media media = c.mediaStack[c.mediaStack.length - 1];
-    string id = normalizeIdentifier(media.labelId ?? "");
+    int id = c.parser.identifier(normalizeIdentifier(media.labelId ?? ""));
     c.resume();
-    if (!c.definitions.has(id)) {
-      c.definitions.set(id, media);
+    while (c.definitionOf.length <= id) {
+      c.definitionOf.push(-1);
+    }
+    if (c.definitionOf[id] < 0) {
+      c.definitionOf[id] = c.definitionList.length;
+      c.definitionList.push(media);
     }
     c.mediaStack.pop();
   });

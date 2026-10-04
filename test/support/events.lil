@@ -1,9 +1,9 @@
 // Test-only view of the event stream: one line per event, `enter|exit type sl:sc:so-el:ec:eo`.
 import { combineAll, createParser, parseDocument } from "../../src/parse.lil";
 import { Parser, Tokens, eventToken, isEnter } from "../../src/tokenizer.lil";
-import { CORE_TYPE_COUNT, typeNames } from "../../src/types.lil";
+import { CORE_TYPE_COUNT } from "../../src/types.lil";
 
-// Names in id order: core types first, then registered ones. Used by debugging and the JSON test views.
+// Upstream's type names, in id order. Test-only: production code knows types as ints.
 string[] coreNames = [
   "data",
   "whitespace",
@@ -107,11 +107,14 @@ string[] coreNames = [
   "chunkContent",
   "chunkFlow",
   "chunkText",
-  "chunkString"
+  "chunkString",
+  "space",
+  "attentionSequence",
+  "listItem"
 ];
 
 string nameOf(int type) {
-  return if (type < CORE_TYPE_COUNT) { coreNames[type] } else { typeNames[type - CORE_TYPE_COUNT] };
+  return if (type < CORE_TYPE_COUNT) { coreNames[type] } else { "type" + type };
 }
 
 export string eventsText(string value) {
