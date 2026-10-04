@@ -29,15 +29,44 @@ carries the 2,125-entry named-reference table; `dist/browser/` (the `browser` co
 with the document's own HTML parser, as upstream's browser graph does, so the table is neither downloaded nor
 unpacked at load.
 
-## Use
+## Install
 
-```js
-import {micromark} from '@itslil/lil2-micromark'
-
-micromark('## Hello, *world*!', false, false)
-// '<h2>Hello, <em>world</em>!</h2>'
+```bash
+npm install @itslil/lil2-micromark
 ```
 
+TypeScript types are included. One ES module per entry; Node, Deno, Bun and workers get `dist/`, bundlers targeting
+browsers get `dist/browser/` through the `browser` condition.
+
+## Use
+
+```ts
+import {micromark} from '@itslil/lil2-micromark'
+
+const html = micromark('## Hello, *world*!')
+console.log(html) // <h2>Hello, <em>world</em>!</h2>
+
+// Like upstream, raw HTML and dangerous link protocols are dropped unless you allow them (trusted input only):
+const trusted = micromark('<kbd>Ctrl</kbd> [run](javascript:go())', true, true)
+console.log(trusted)
+```
+
+`micromark(value, allowDangerousHtml?, allowDangerousProtocol?)` is upstream's `micromark(value, {allowDangerousHtml,
+allowDangerousProtocol})`; both flags default to `false`. It returns the same HTML as micromark 4 for every input.
+Upstream's other options (extensions, `stream`) are not part of this package: for GFM, math or React, see below.
+
+### Which package
+
+| you want | package |
+|---|---|
+| React elements | [`@itslil/lil2-react-markdown`](https://github.com/yeargun/lil2-react-markdown) (`/gfm`, `/full` for GFM, math, KaTeX) |
+| an HTML string, CommonMark | [`@itslil/lil2-micromark`](https://github.com/yeargun/lil2-micromark) |
+| an HTML string with GFM, math or KaTeX | `renderToStaticMarkup` of lil2-react-markdown's `/full` flavor (below) |
+| mdast (syntax tree) | [`lil2-mdast-util-from-markdown`](https://github.com/yeargun/lil2-mdast-util-from-markdown); with GFM [`lil2-remark-gfm`](https://github.com/yeargun/lil2-remark-gfm), math [`lil2-remark-math`](https://github.com/yeargun/lil2-remark-math), breaks [`lil2-remark-breaks`](https://github.com/yeargun/lil2-remark-breaks) |
+| hast (HTML tree) | [`lil2-mdast-util-to-hast`](https://github.com/yeargun/lil2-mdast-util-to-hast) and the same three, or [`lil2-rehype-katex`](https://github.com/yeargun/lil2-rehype-katex) with formulas rendered |
+
+Every package is one self-contained ES module with no runtime dependencies (React and KaTeX aside), ships its
+TypeScript types, and resolves to a Node build or a browser build through its `exports` conditions.
 ## Measured (2026-10-04)
 
 The `browser` build against micromark@4.0.2 bundled for the browser with esbuild and minified by Terser, esbuild and Oxc
@@ -55,11 +84,11 @@ first call of a fresh page.
 
 | | Chromium | Firefox |
 |---|---:|---:|
-| chat (1 KB) | 0.62 → 0.27 ms (0.44×) | 1.10 → 0.50 ms (0.45×) |
-| readme (26 KB) | 14.8 → 6.37 ms (0.43×) | 30.0 → 12.0 ms (0.40×) |
-| large (222 KB) | 158 → 64.5 ms (0.41×) | 284 → 115 ms (0.40×) |
-| import, cold | 4.70 → 4.90 ms | 9.00 → 9.00 ms |
-| first call, cold | 10.1 → 10.2 ms | 12.0 → 9.00 ms |
+| chat (1 KB) | 0.57 → 0.24 ms (0.43×) | 1.10 → 0.50 ms (0.45×) |
+| readme (26 KB) | 14.0 → 6.13 ms (0.44×) | 28.0 → 12.0 ms (0.43×) |
+| large (222 KB) | 147 → 60.8 ms (0.41×) | 279 → 115 ms (0.41×) |
+| import, cold | 4.30 → 4.70 ms | 8.00 → 9.00 ms |
+| first call, cold | 9.40 → 8.90 ms | 12.0 → 9.00 ms |
 
 ## Behaviour
 

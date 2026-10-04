@@ -1,7 +1,6 @@
 {
   "name": "@itslil/lil2-micromark",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "description": "micromark, rewritten in typed LilScript: flat data, same HTML",
   "type": "module",
   "license": "MIT",
@@ -10,10 +9,29 @@
     "type": "git",
     "url": "git+https://github.com/yeargun/lil2-micromark.git"
   },
+  "bugs": {
+    "url": "https://github.com/yeargun/lil2-micromark/issues"
+  },
   "homepage": "https://yeargun.github.io/lil2-micromark/",
+  "keywords": [
+    "micromark",
+    "commonmark",
+    "markdown",
+    "html",
+    "lilscript",
+    "lil2",
+    "typed",
+    "fast"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
   "main": "./dist/micromark.js",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": {
+      "types": "./types/index.d.ts",
       "convex": "./dist/micromark.js",
       "deno": "./dist/micromark.js",
       "edge-light": "./dist/micromark.js",
@@ -24,6 +42,11 @@
       "default": "./dist/micromark.js"
     }
   },
+  "files": [
+    "dist/**/*.js",
+    "types",
+    "NOTICE.md"
+  ],
   "scripts": {
     "build:dev": "node scripts/build.mjs --dev",
     "build": "node scripts/build.mjs",
