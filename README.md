@@ -40,28 +40,26 @@ micromark('## Hello, *world*!', false, false)
 
 ## Measured (2026-10-04)
 
-Same surface on both sides: `micromark(value)`. Upstream is micromark 4.0.2 bundled with esbuild and minified
-by Terser, esbuild and Oxc (best shown). lil2 is the one shipped Brotli-objective build.
+The `browser` build against micromark@4.0.2 bundled for the browser with esbuild and minified by Terser, esbuild and Oxc
+(the smallest shown). Each objective is its own LilScript build (effort level 12, `lazy_functions`).
 
-| | lil2-micromark | upstream, best minifier | difference |
+| | lil2 | upstream, best minifier | difference |
 |---|---:|---:|---:|
-| raw | 66,613 | 81,652 (Terser) | −18.4% |
-| gzip (9) | 25,619 | 26,600 (Terser) | −3.7% |
-| Brotli (11) | 21,466 | 22,937 (Terser) | −6.4% |
+| raw | 46,829 | 53,097 (Terser) | −11.8% |
+| gzip (9) | 15,137 | 14,785 (Terser) | +2.4% |
+| Brotli (11) | 13,344 | 13,226 (Terser) | +0.9% |
 
-Speed: identical HTML is a precondition, then median time per `micromark()` call in a fresh browser context
-per lane (Playwright; Chromium 151, Firefox 153; AMD EPYC 7763):
+Speed, upstream → lil2: `micromark(value)`, median per call in a fresh browser context per lane, after checking that both
+give the same output (Playwright; Chromium 151, Firefox 153; AMD EPYC 7763 64-Core Processor). Cold rows are the first import and the
+first call of a fresh page.
 
-| document | Chromium upstream → lil2 | Firefox upstream → lil2 |
+| | Chromium | Firefox |
 |---|---:|---:|
-| chat (1 KB) | 0.60 → 0.30 ms (0.50×) | 1.11 → 0.60 ms (0.54×) |
-| readme (26 KB) | 14.9 → 7.0 ms (0.47×) | 30.5 → 13.3 ms (0.43×) |
-| CommonMark spec (17 KB) | 32.2 → 11.8 ms (0.37×) | 60.5 → 23.0 ms (0.38×) |
-| large (227 KB) | 151 → 81 ms (0.53×) | 285 → 130 ms (0.46×) |
-| load (import) | 4.7 → 6.0 ms | 9.0 → 11.0 ms |
-| first render, cold | 9.5 → 8.6 ms | 13.0 → 9.0 ms |
-
-Loading is slower by the one-time decoding of the 2,125-entry entity table, which ships front-coded.
+| chat (1 KB) | 0.62 → 0.27 ms (0.44×) | 1.10 → 0.50 ms (0.45×) |
+| readme (26 KB) | 14.8 → 6.37 ms (0.43×) | 30.0 → 12.0 ms (0.40×) |
+| large (222 KB) | 158 → 64.5 ms (0.41×) | 284 → 115 ms (0.40×) |
+| import, cold | 4.70 → 4.90 ms | 9.00 → 9.00 ms |
+| first call, cold | 10.1 → 10.2 ms | 12.0 → 9.00 ms |
 
 ## Behaviour
 

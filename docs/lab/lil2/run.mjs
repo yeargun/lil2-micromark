@@ -1,0 +1,1 @@
+import {micromark} from './micromark.js'; export const run = md => micromark(md, false, false); export const view = md => micromark(md, false, false)

@@ -4,7 +4,7 @@
 //   --dev:      unsearched builds into .dev/ and .dev/browser/, plus the test-only event view
 import {execFileSync} from 'node:child_process'
 import {existsSync} from 'node:fs'
-const compiler = process.env.LILSCRIPT_COMPILER ?? '/home/azureuser/lilscript-work/remark-fix/lilscript-8ff44f'
+const compiler = process.env.LILSCRIPT_COMPILER ?? '/home/azureuser/lilscript-work/lil2/lilscript-lazyfn'
 if (!existsSync(compiler)) throw new Error('Set LILSCRIPT_COMPILER to the pinned LilScript compiler')
 const run = (cwd, config, out, mode) => {
   const start = process.hrtime.bigint()
